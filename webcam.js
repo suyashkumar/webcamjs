@@ -71,8 +71,10 @@ var Webcam = {
 		WebcamError: WebcamError
 	},
 	
-	hooks: {}, // callback hook functions
-	
+	hooks: {}, // callback hook functions 
+	cameraIDs: [],
+	cameraID: 0,
+
 	init: function() {
 		// initialize, check for getUserMedia support
 		var self = this;
@@ -103,6 +105,19 @@ var Webcam = {
 				self.reset();
 			} );
 		}
+		// check the video devices connected
+        try {
+            MediaStreamTrack.getSources(function (info){
+                for(var i =0;i!=info.length;i++){
+                    var inf = info[i];
+                    if (inf.kind === 'video') {
+                        Webcam.cameraIDs.push(inf.id);
+                    }
+                }
+            });
+        } catch (e) {
+            // possible problems with MediaStreamTrack 
+        }
 	},
 	
 	exifOrientation: function(binFile) {
@@ -293,13 +308,15 @@ var Webcam = {
 			
 			// ask user for access to their camera
 			var self = this;
+			console.log(this.cameraIDs[this.cameraID])
 			this.mediaDevices.getUserMedia({
 				"audio": false,
 				"video": this.params.constraints || {
 					mandatory: {
 						minWidth: this.params.dest_width,
 						minHeight: this.params.dest_height
-					}
+					},
+					optional: [{sourceId: this.cameraIDs[this.cameraID]}]
 				}
 			})
 			.then( function(stream) {
